@@ -1,4 +1,5 @@
 import {ChevronDown, ChevronUp, Mic, Square, MicOff} from 'lucide-react'
+import {MicrophoneSlash} from 'iconsax-reactjs'
 import {useEffect, useRef, useState} from 'react'
 import {VoiceRxSiriWaveform} from './VoiceRxSiriWaveform.jsx'
 import {VoiceRxIcon} from './voice-consult-icons.jsx'
@@ -171,12 +172,12 @@ export function DictationView({
 										aria-pressed={isMicOn}
 										onClick={onToggleMic}
 										className={`relative flex h-full w-[44px] items-center justify-center transition-transform active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-60 ${
-											isMicOn ? 'text-tp-warning-700' : 'text-tp-slate-500'
+											!isMicOn ? 'text-tp-warning-700' : 'text-tp-slate-500'
 										}`}
 									>
 										<span className="relative inline-flex h-[24px] w-[24px] items-center justify-center">
-											{isMicOn ? (
-												<MicOff className='h-5 w-5' />
+											{!isMicOn ? (
+												<MicrophoneSlash size="24" variant="Bulk" color="currentColor" />
 											) : (
 												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 													<path opacity="0.4" d="M19.12 9.12c-.39 0-.7.31-.7.7v1.58c0 3.54-2.88 6.42-6.42 6.42s-6.42-2.88-6.42-6.42V9.81c0-.39-.31-.7-.7-.7-.39 0-.7.31-.7.7v1.58c0 4.07 3.13 7.42 7.12 7.78v2.13c0 .39.31.7.7.7.39 0 .7-.31.7-.7v-2.13c3.98-.35 7.12-3.71 7.12-7.78V9.81a.707.707 0 0 0-.7-.69Z"></path>

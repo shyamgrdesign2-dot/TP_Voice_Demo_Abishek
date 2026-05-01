@@ -1,5 +1,5 @@
 import {ClipboardCopy, Printer, LogOut, Check, AlertCircle, Copy} from 'lucide-react'
-import {Microphone2, DocumentText} from 'iconsax-reactjs'
+import {Microphone2, DocumentText, DocumentCode, DocumentFilter} from 'iconsax-reactjs'
 import {useEffect, useMemo, useState} from 'react'
 import {RichEditor} from './RichEditor.jsx'
 import {digitizationToHtml, icdToHtml, soapToHtml} from '../lib/result-formatters.js'
@@ -12,10 +12,11 @@ const TABS = [
 ]
 
 function TabIcon({id, active}) {
-	if (id === 'transcript') {
-		return <Microphone2 size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
-	}
-	return <DocumentText size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
+	if (id === 'transcript') return <Microphone2 size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
+	if (id === 'soap') return <DocumentText size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
+	if (id === 'icd') return <DocumentCode size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
+	if (id === 'digitization') return <DocumentFilter size={15} variant={active ? "Bulk" : "Linear"} color="currentColor" />
+	return null
 }
 
 function escapeHtml(value) {
@@ -100,7 +101,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 
 	return (
 		<>
-			<section className='vrx-results-zone'>
+			<section className='vrx-results-zone bg-tp-slate-50 border-b border-tp-slate-200'>
 				<div className='px-4 pt-4 pb-2'>
 					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-tp-slate-100 p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 						{TABS.map((tab) => {
@@ -140,7 +141,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							</div>
 						</div>
 					) : activeTab === 'transcript' ? (
-						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm leading-7 text-tp-slate-500 bg-tp-slate-50 pointer-events-none select-none border-t border-tp-slate-100'>
+						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm leading-7 text-tp-slate-500 bg-tp-slate-100 pointer-events-none select-none'>
 							<div dangerouslySetInnerHTML={{__html: editedHtml[activeTab] || '<p><em>No transcript.</em></p>'}} />
 						</div>
 					) : (
@@ -158,11 +159,11 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							<>
 								<button type='button' className='tp-btn-primary min-w-[140px] justify-center' disabled={isPending || isError} onClick={handleCopy}>
 									{toast === 'Copied' ? <Check className='h-4 w-4'/> : <Copy className='h-4 w-4'/>}
-									<span>{toast === 'Copied' ? 'Copied' : 'Copy'}</span>
+									<span>{toast === 'Copied' ? 'Copied' : `Copy ${TABS.find(t => t.id === activeTab)?.label}`}</span>
 								</button>
 								<button type='button' className='tp-btn-primary min-w-[140px] justify-center' disabled={isPending || isError} onClick={() => window.print()}>
 									<Printer className='h-4 w-4'/>
-									<span>Print</span>
+									<span>{`Print ${TABS.find(t => t.id === activeTab)?.label}`}</span>
 								</button>
 							</>
 						) : (
