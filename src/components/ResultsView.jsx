@@ -101,7 +101,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 
 	return (
 		<>
-			<section className='vrx-results-zone border-b border-tp-slate-200' style={{backgroundColor: '#FAFAFB'}}>
+			<section className='vrx-results-zone border-b border-tp-slate-200'>
 				<div className='px-4 pt-4 pb-2'>
 					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-[#F1F1F5] p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'}}>
 						{TABS.map((tab) => {
@@ -109,7 +109,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							const active = activeTab === tab.id
 							
 							const baseClass = "flex-1 flex items-center justify-center gap-[6px] whitespace-nowrap rounded-[10px] px-[10px] text-[13px] font-semibold tracking-tight transition-all duration-200"
-							const activeClass = "bg-white text-blue-500 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
+							const activeClass = "bg-white text-tp-blue-600 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
 							const inactiveClass = "text-tp-slate-500 bg-transparent hover:bg-black/5 hover:text-tp-slate-900"
 							
 							return (
@@ -141,7 +141,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							</div>
 						</div>
 					) : activeTab === 'transcript' ? (
-						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-[14px] leading-[1.75] pointer-events-none select-none text-tp-slate-400 bg-tp-slate-50 border-t border-tp-slate-200'>
+						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-[14px] leading-[1.75] pointer-events-none select-none text-tp-slate-400 bg-[#F1F1F5]'>
 							<div dangerouslySetInnerHTML={{__html: editedHtml[activeTab] || '<p><em>No transcript.</em></p>'}} />
 						</div>
 					) : (
