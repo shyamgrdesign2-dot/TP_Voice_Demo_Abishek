@@ -1,7 +1,7 @@
 import {ChevronDown, ChevronUp, Mic, Square} from 'lucide-react'
 import {useEffect, useRef, useState} from 'react'
 import {VoiceRxSiriWaveform} from './VoiceRxSiriWaveform.jsx'
-import {VoiceRxIcon, MicOnIcon, MicMutedIcon} from './voice-consult-icons.jsx'
+import {VoiceRxIcon} from './voice-consult-icons.jsx'
 import {Tooltip} from './Tooltip.jsx'
 
 function formatElapsed(ms) {
@@ -159,57 +159,64 @@ export function DictationView({
 
 						<span className='vrx-cta-divider' aria-hidden='true'/>
 
-						{/* Mic + chevron device picker (combined glossy chip) */}
-						<div ref={micMenuRef} className={`vrx-lg-btn relative flex h-[42px] items-stretch overflow-hidden rounded-[12px] transition-opacity ${!isMicOn ? 'vrx-mic-muted' : ''}`}>
-							<span className='vrx-lg-surface' aria-hidden='true'/>
-							<span className='vrx-lg-sheen' aria-hidden='true'/>
-							<button
-								type='button'
-								aria-label={isMicOn ? 'Mute microphone' : 'Unmute microphone'}
-								aria-pressed={!isMicOn}
-								onClick={onToggleMic}
-								className='relative flex h-full w-[44px] items-center justify-center transition-transform active:scale-[0.94]'
-								style={{color: isMicOn ? 'var(--tp-slate-500)' : 'var(--tp-warning-700, #B45309)'}}
-							>
-								{isMicOn ? <MicOnIcon/> : <MicMutedIcon/>}
-							</button>
-							<div className='vrx-lg-divider' aria-hidden='true'/>
-							<button
-								type='button'
-								aria-label='Choose microphone'
-								onClick={() => setShowMicMenu((v) => !v)}
-								className='relative flex h-full w-[28px] items-center justify-center transition-transform hover:opacity-80 active:scale-[0.96]'
-								style={{color: 'var(--tp-slate-500)'}}
-							>
-								<ChevronUp className='h-4 w-4'/>
-							</button>
-
-							{showMicMenu ? (
-								<div className='absolute bottom-[calc(100%+8px)] left-0 w-[240px] rounded-[14px] bg-white p-[6px] shadow-[0_8px_30px_rgba(15,23,42,0.12)] border border-tp-slate-200 origin-bottom-left animate-in fade-in slide-in-from-bottom-2 duration-100 z-50 text-left'>
-									<div className='px-2 py-[6px] text-[10px] font-semibold uppercase tracking-wider text-tp-slate-400'>
-										Available Microphones
-									</div>
-									<div className='max-h-[200px] overflow-y-auto'>
-										{micOptions.map(mic => (
-											<button
-												key={mic.deviceId}
-												type='button'
-												className={`flex w-full items-center gap-[8px] rounded-[8px] px-[10px] py-[8px] text-[13px] transition-colors text-left ${mic.deviceId === selectedMic ? 'bg-tp-blue-50 text-tp-blue-700 font-medium' : 'text-tp-slate-700 hover:bg-tp-slate-50'}`}
-												onClick={() => {
-													setSelectedMic(mic.deviceId)
-													setShowMicMenu(false)
-												}}
-											>
-												<Mic className='h-[14px] w-[14px] shrink-0' />
-												<span className='truncate'>{mic.label || 'Default Microphone'}</span>
-											</button>
-										))}
-										{micOptions.length === 0 && (
-											<div className='px-2 py-2 text-[12px] text-tp-slate-500'>No microphones found</div>
-										)}
-									</div>
+						{/* Mic + chevron device picker */}
+						<div className='flex items-center gap-[12px]'>
+							<div className='relative' ref={micMenuRef}>
+								<div className='flex items-center rounded-full bg-white shadow-sm border' style={{borderColor: 'var(--tp-slate-200)'}}>
+									<Tooltip label={isMicOn ? 'Stop microphone' : 'Start microphone'}>
+										<button
+											type='button'
+											onClick={onToggleMic}
+											className={`flex h-[42px] w-[42px] items-center justify-center rounded-l-full transition-colors ${
+												isMicOn
+													? 'text-white'
+													: 'text-tp-slate-600 hover:bg-tp-slate-50 active:bg-tp-slate-100'
+											}`}
+											style={isMicOn ? {background: 'var(--tp-error-600)'} : {}}
+											aria-label={isMicOn ? 'Stop recording' : 'Start recording'}
+										>
+											{isMicOn ? <Square className='h-5 w-5 fill-current'/> : <Mic className='h-5 w-5'/>}
+										</button>
+									</Tooltip>
+									<div className='h-[20px] w-px bg-tp-slate-200' />
+									<Tooltip label='Select microphone'>
+										<button
+											type='button'
+											onClick={() => setShowMicMenu(!showMicMenu)}
+											className='flex h-[42px] w-[32px] items-center justify-center rounded-r-full text-tp-slate-500 hover:bg-tp-slate-50 transition-colors'
+										>
+											<ChevronUp className='h-4 w-4' />
+										</button>
+									</Tooltip>
 								</div>
-							) : null}
+
+								{showMicMenu ? (
+									<div className='absolute bottom-[calc(100%+8px)] left-0 w-[240px] rounded-[14px] bg-white p-[6px] shadow-[0_8px_30px_rgba(15,23,42,0.12)] border border-tp-slate-200 origin-bottom-left animate-in fade-in slide-in-from-bottom-2 duration-100 z-50 text-left'>
+										<div className='px-2 py-[6px] text-[10px] font-semibold uppercase tracking-wider text-tp-slate-400'>
+											Available Microphones
+										</div>
+										<div className='max-h-[200px] overflow-y-auto'>
+											{micOptions.map(mic => (
+												<button
+													key={mic.deviceId}
+													type='button'
+													className={`flex w-full items-center gap-[8px] rounded-[8px] px-[10px] py-[8px] text-[13px] transition-colors text-left ${mic.deviceId === selectedMic ? 'bg-tp-blue-50 text-tp-blue-700 font-medium' : 'text-tp-slate-700 hover:bg-tp-slate-50'}`}
+													onClick={() => {
+														setSelectedMic(mic.deviceId)
+														setShowMicMenu(false)
+													}}
+												>
+													<Mic className='h-[14px] w-[14px] shrink-0' />
+													<span className='truncate'>{mic.label || 'Default Microphone'}</span>
+												</button>
+											))}
+											{micOptions.length === 0 && (
+												<div className='px-2 py-2 text-[12px] text-tp-slate-500'>No microphones found</div>
+											)}
+										</div>
+									</div>
+								) : null}
+							</div>
 						</div>
 
 						<span className='vrx-cta-divider' aria-hidden='true'/>
