@@ -92,7 +92,77 @@ export function DictationView({
 		el.scrollTo({top: el.scrollHeight, behavior: 'smooth'})
 	}, [transcript])
 
-	const hasTranscript = !!transcript?.trim()
+	const hasTranscript = Boolean(transcript?.trim())
+
+	// Speech Recognition Effect
+	useEffect(() => {
+		if (!isMicOn) {
+			if (window.recognition) {
+				window.recognition.stop()
+			}
+			return
+		}
+
+		const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+		if (!SpeechRecognition) {
+			console.warn('Speech recognition not supported in this browser.')
+			return
+		}
+
+		const recognition = new SpeechRecognition()
+		window.recognition = recognition
+		recognition.continuous = true
+		recognition.interimResults = true
+		recognition.lang = 'en-US'
+
+		let baseTranscript = transcript || ''
+
+		recognition.onresult = (event) => {
+			let interimTranscript = ''
+			let currentFinal = ''
+
+			for (let i = event.resultIndex; i < event.results.length; ++i) {
+				if (event.results[i].isFinal) {
+					currentFinal += event.results[i][0].transcript
+				} else {
+					interimTranscript += event.results[i][0].transcript
+				}
+			}
+			
+			if (currentFinal) {
+				baseTranscript += (baseTranscript && currentFinal.trim() ? ' ' : '') + currentFinal.trim()
+			}
+			
+			const displayTranscript = baseTranscript + (interimTranscript ? (baseTranscript ? ' ' : '') + interimTranscript : '')
+			setTranscript(displayTranscript)
+		}
+
+		recognition.onerror = (event) => {
+			console.error('Speech recognition error:', event.error)
+		}
+
+		recognition.onend = () => {
+			if (isMicOn && window.recognition === recognition) {
+				try {
+					recognition.start()
+				} catch (e) {
+					console.error('Failed to restart recognition:', e)
+				}
+			}
+		}
+
+		try {
+			recognition.start()
+		} catch (e) {
+			console.error('Failed to start recognition:', e)
+		}
+
+		return () => {
+			recognition.onend = null
+			recognition.stop()
+			window.recognition = null
+		}
+	}, [isMicOn])
 
 	return (
 		<div className='vrx-active-shell font-sans'>
