@@ -103,14 +103,14 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 		<>
 			<section className='vrx-results-zone bg-tp-slate-50 border-b border-tp-slate-200'>
 				<div className='px-4 pt-4 pb-2'>
-					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-tp-slate-100 p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-tp-slate-100 p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'}}>
 						{TABS.map((tab) => {
 							const state = tabState[tab.id]
 							const active = activeTab === tab.id
 							
-							const baseClass = "flex-1 flex items-center justify-center gap-[6px] whitespace-nowrap rounded-[10px] px-[10px] text-[12px] font-semibold tracking-tight transition-all"
-							const activeClass = "bg-white text-tp-blue-600 shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
-							const inactiveClass = "text-tp-slate-600"
+							const baseClass = "flex-1 flex items-center justify-center gap-[6px] whitespace-nowrap rounded-[10px] px-[10px] text-[13px] font-semibold tracking-tight transition-all duration-200"
+							const activeClass = "bg-white text-tp-blue-600 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
+							const inactiveClass = "text-tp-slate-600 hover:bg-white/50 hover:text-tp-slate-900"
 							
 							return (
 								<button
@@ -141,7 +141,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							</div>
 						</div>
 					) : activeTab === 'transcript' ? (
-						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm leading-7 text-tp-slate-500 bg-tp-slate-100 pointer-events-none select-none'>
+						<div className='min-h-0 flex-1 overflow-y-auto px-6 py-5 text-sm leading-7 text-tp-slate-500 pointer-events-none select-none' style={{backgroundColor: '#F1F5F9', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'}}>
 							<div dangerouslySetInnerHTML={{__html: editedHtml[activeTab] || '<p><em>No transcript.</em></p>'}} />
 						</div>
 					) : (
@@ -173,8 +173,8 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 					{!isPastSession && (
 						<button
 							type='button'
-							className='tp-btn-ghost absolute right-4'
-							style={{color: 'var(--tp-error-600, #DC2626)'}}
+							className='absolute right-4 flex h-[38px] items-center justify-center gap-[6px] rounded-[10px] px-[14px] text-[13px] font-semibold transition-all hover:bg-[#FEE2E2] active:scale-[0.96]'
+							style={{color: 'var(--tp-error-600, #DC2626)', backgroundColor: '#FEF2F2', border: '1px solid rgba(220, 38, 38, 0.1)'}}
 							onClick={onNewSession}
 						>
 							<LogOut className='h-4 w-4'/>
