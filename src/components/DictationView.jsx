@@ -1,4 +1,4 @@
-import {ChevronDown, ChevronUp, Mic, Square} from 'lucide-react'
+import {ChevronDown, ChevronUp, Mic, Square, MicOff} from 'lucide-react'
 import {useEffect, useRef, useState} from 'react'
 import {VoiceRxSiriWaveform} from './VoiceRxSiriWaveform.jsx'
 import {VoiceRxIcon} from './voice-consult-icons.jsx'
@@ -169,13 +169,12 @@ export function DictationView({
 											onClick={onToggleMic}
 											className={`flex h-[42px] w-[42px] items-center justify-center rounded-l-full transition-colors ${
 												isMicOn
-													? 'text-white'
+													? 'text-white bg-tp-error-600'
 													: 'text-tp-slate-600 hover:bg-tp-slate-50 active:bg-tp-slate-100'
 											}`}
-											style={isMicOn ? {background: 'var(--tp-error-600)'} : {}}
 											aria-label={isMicOn ? 'Stop recording' : 'Start recording'}
 										>
-											{isMicOn ? <Square className='h-5 w-5 fill-current'/> : <Mic className='h-5 w-5'/>}
+											{isMicOn ? <Mic className='h-5 w-5 fill-current'/> : <MicOff className='h-5 w-5'/>}
 										</button>
 									</Tooltip>
 									<div className='h-[20px] w-px bg-tp-slate-200' />
@@ -185,7 +184,7 @@ export function DictationView({
 											onClick={() => setShowMicMenu(!showMicMenu)}
 											className='flex h-[42px] w-[32px] items-center justify-center rounded-r-full text-tp-slate-500 hover:bg-tp-slate-50 transition-colors'
 										>
-											<ChevronUp className='h-4 w-4' />
+											{showMicMenu ? <ChevronUp className='h-4 w-4' /> : <ChevronDown className='h-4 w-4' />}
 										</button>
 									</Tooltip>
 								</div>
