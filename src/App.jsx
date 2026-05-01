@@ -487,7 +487,6 @@ export default function App() {
 
 	return (
 		<div className='voicerx-shell'>
-			<div className='vrx-da-gradient-wash pointer-events-none absolute inset-0 z-0' aria-hidden='true'/>
 			<div className='voicerx-aura' aria-hidden='true'/>
 
 			<TopBar

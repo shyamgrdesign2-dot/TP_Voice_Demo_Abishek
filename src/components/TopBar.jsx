@@ -92,11 +92,11 @@ export function TopBar({sessionStatus, onLogout, onSessionHistory, onBack, activ
 						<Tooltip label='Session history'>
 							<button
 								type='button'
-								className='tp-topbar-icon-btn'
+								className='bg-[#f1f1f5] content-stretch flex h-[42px] w-[42px] items-center justify-center relative rounded-[10px] shrink-0 transition-colors hover:bg-[#e9e9ef]'
 								onClick={onSessionHistory}
 								aria-label='Session history'
 							>
-								<Clock className='h-[20px] w-[20px]'/>
+								<Clock className='h-[20px] w-[20px] text-[#454551]'/>
 							</button>
 						</Tooltip>
 						
@@ -104,12 +104,16 @@ export function TopBar({sessionStatus, onLogout, onSessionHistory, onBack, activ
 							<Tooltip label='User Profile'>
 								<button
 									type='button'
-									className='tp-topbar-icon-btn flex items-center gap-[6px] pl-[10px] pr-[6px]'
+									className='bg-[#f1f1f5] relative rounded-[1250px] shrink-0 h-[40px] w-[40px] transition-colors hover:bg-[#e9e9ef]'
 									onClick={() => setShowProfileMenu(v => !v)}
 									aria-label='User Profile'
 								>
-									<User className='h-[20px] w-[20px]'/>
-									<ChevronDown className='h-[14px] w-[14px] opacity-60'/>
+									<div className="absolute left-[8.57px] top-[8.57px] h-[22.857px] w-[22.857px]" aria-hidden="true">
+										<svg xmlns="http://www.w3.org/2000/svg" width="22.857" height="22.857" viewBox="0 0 24 24" fill="none">
+											<path opacity=".4" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" fill="#545460"></path>
+											<path d="M12 14.5c-5.01 0-9.09 3.36-9.09 7.5 0 .28.22.5.5.5h17.18c.28 0 .5-.22.5-.5 0-4.14-4.08-7.5-9.09-7.5Z" fill="#545460"></path>
+										</svg>
+									</div>
 								</button>
 							</Tooltip>
 							
