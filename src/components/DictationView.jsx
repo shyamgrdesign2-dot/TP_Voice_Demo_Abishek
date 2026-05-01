@@ -162,31 +162,38 @@ export function DictationView({
 						{/* Mic + chevron device picker */}
 						<div className='flex items-center gap-[12px]'>
 							<div className='relative' ref={micMenuRef}>
-								<div className='flex items-center rounded-full bg-white shadow-sm border' style={{borderColor: 'var(--tp-slate-200)'}}>
-									<Tooltip label={isMicOn ? 'Stop microphone' : 'Start microphone'}>
-										<button
-											type='button'
-											onClick={onToggleMic}
-											className={`flex h-[42px] w-[42px] items-center justify-center rounded-l-full transition-colors ${
-												isMicOn
-													? 'text-white bg-tp-error-600'
-													: 'text-tp-slate-600 hover:bg-tp-slate-50 active:bg-tp-slate-100'
-											}`}
-											aria-label={isMicOn ? 'Stop recording' : 'Start recording'}
-										>
-											{isMicOn ? <Mic className='h-5 w-5 fill-current'/> : <MicOff className='h-5 w-5'/>}
-										</button>
-									</Tooltip>
-									<div className='h-[20px] w-px bg-tp-slate-200' />
-									<Tooltip label='Select microphone'>
-										<button
-											type='button'
-											onClick={() => setShowMicMenu(!showMicMenu)}
-											className='flex h-[42px] w-[32px] items-center justify-center rounded-r-full text-tp-slate-500 hover:bg-tp-slate-50 transition-colors'
-										>
-											{showMicMenu ? <ChevronUp className='h-4 w-4' /> : <ChevronDown className='h-4 w-4' />}
-										</button>
-									</Tooltip>
+								<div className="vrx-lg-btn relative flex h-[42px] items-stretch overflow-hidden rounded-[12px] transition-opacity">
+									<span className="vrx-lg-surface" aria-hidden="true"></span>
+									<span className="vrx-lg-sheen" aria-hidden="true"></span>
+									<button 
+										type="button" 
+										aria-label={isMicOn ? "Mute microphone" : "Start microphone"} 
+										aria-pressed={isMicOn}
+										onClick={onToggleMic}
+										className={`relative flex h-full w-[44px] items-center justify-center transition-transform active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-60 ${
+											isMicOn ? 'text-tp-warning-700' : 'text-tp-slate-500'
+										}`}
+									>
+										<span className="relative inline-flex h-[24px] w-[24px] items-center justify-center">
+											{isMicOn ? (
+												<MicOff className='h-5 w-5' />
+											) : (
+												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+													<path opacity="0.4" d="M19.12 9.12c-.39 0-.7.31-.7.7v1.58c0 3.54-2.88 6.42-6.42 6.42s-6.42-2.88-6.42-6.42V9.81c0-.39-.31-.7-.7-.7-.39 0-.7.31-.7.7v1.58c0 4.07 3.13 7.42 7.12 7.78v2.13c0 .39.31.7.7.7.39 0 .7-.31.7-.7v-2.13c3.98-.35 7.12-3.71 7.12-7.78V9.81a.707.707 0 0 0-.7-.69Z"></path>
+													<path d="M12 2c-2.44 0-4.42 1.98-4.42 4.42v5.12c0 2.44 1.98 4.42 4.42 4.42s4.42-1.98 4.42-4.42V6.42C16.42 3.98 14.44 2 12 2Zm1.31 6.95c-.07.26-.3.43-.56.43-.05 0-.1-.01-.15-.02-.39-.11-.8-.11-1.19 0-.32.09-.63-.1-.71-.41-.09-.31.1-.63.41-.71.59-.16 1.21-.16 1.8 0 .3.08.48.4.4.71Zm.53-1.94c-.09.24-.31.38-.55.38-.07 0-.14-.01-.2-.03-.69-.26-1.47-.26-2.17 0-.3.11-.63-.05-.74-.35-.11-.3.05-.63.35-.74.97-.35 2.03-.35 3 0 .3.11.46.44.31.74Z"></path>
+												</svg>
+											)}
+										</span>
+									</button>
+									<div className="vrx-lg-divider" aria-hidden="true"></div>
+									<button 
+										type="button" 
+										aria-label="Choose microphone" 
+										onClick={() => setShowMicMenu(!showMicMenu)}
+										className="relative flex h-full w-[28px] items-center justify-center text-tp-slate-500 transition-transform hover:text-tp-slate-700 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-60"
+									>
+										<ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showMicMenu ? 'rotate-180' : ''}`} />
+									</button>
 								</div>
 
 								{showMicMenu ? (
