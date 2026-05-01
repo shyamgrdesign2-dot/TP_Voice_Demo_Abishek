@@ -6,9 +6,9 @@ import {digitizationToHtml, icdToHtml, soapToHtml} from '../lib/result-formatter
 
 const TABS = [
 	{id: 'transcript', label: 'Transcript'},
-	{id: 'soap', label: 'SOAP'},
-	{id: 'icd', label: 'ICD'},
-	{id: 'digitization', label: 'Digitization'}
+	{id: 'soap', label: 'SOAP Notes'},
+	{id: 'icd', label: 'ICD Codes'},
+	{id: 'digitization', label: 'Clinical Notes'}
 ]
 
 function TabIcon({id, active}) {
@@ -110,7 +110,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 							
 							const baseClass = "flex-1 flex items-center justify-center gap-[6px] whitespace-nowrap rounded-[10px] px-[10px] text-[13px] font-semibold tracking-tight transition-all duration-200"
 							const activeClass = "bg-white text-tp-blue-600 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
-							const inactiveClass = "text-tp-slate-600 hover:bg-white/50 hover:text-tp-slate-900"
+							const inactiveClass = "text-tp-slate-600 bg-tp-slate-50 hover:bg-white/50 hover:text-tp-slate-900"
 							
 							return (
 								<button
@@ -173,8 +173,8 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 					{!isPastSession && (
 						<button
 							type='button'
-							className='absolute right-4 flex h-[38px] items-center justify-center gap-[6px] rounded-[10px] px-[14px] text-[13px] font-semibold transition-all hover:bg-[#FEE2E2] active:scale-[0.96]'
-							style={{color: 'var(--tp-error-600, #DC2626)', backgroundColor: '#FEF2F2', border: '1px solid rgba(220, 38, 38, 0.1)'}}
+							className='absolute right-4 flex h-[38px] items-center justify-center gap-[6px] rounded-[10px] px-[14px] text-[13px] font-semibold transition-all hover:bg-[#FEE2E2] active:scale-[0.96] ring-1 ring-inset ring-red-500/10'
+							style={{color: 'var(--tp-error-600, #DC2626)', backgroundColor: '#FEF2F2'}}
 							onClick={onNewSession}
 						>
 							<LogOut className='h-4 w-4'/>

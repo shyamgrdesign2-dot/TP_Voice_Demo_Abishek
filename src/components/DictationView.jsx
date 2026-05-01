@@ -233,7 +233,7 @@ export function DictationView({
 						{/* Mic + chevron device picker */}
 						<div className='flex items-center gap-[12px]'>
 							<div className='relative' ref={micMenuRef}>
-								<div className="vrx-lg-btn relative flex h-[42px] items-stretch overflow-hidden rounded-[12px] transition-opacity">
+								<div className="vrx-lg-btn relative flex h-[42px] items-stretch overflow-hidden rounded-full transition-opacity">
 									<span className="vrx-lg-surface" aria-hidden="true"></span>
 									<span className="vrx-lg-sheen" aria-hidden="true"></span>
 									<button 
