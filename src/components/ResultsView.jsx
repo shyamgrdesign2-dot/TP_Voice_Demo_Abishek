@@ -101,16 +101,16 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 
 	return (
 		<>
-			<section className='vrx-results-zone bg-tp-slate-100 border-b border-tp-slate-200'>
+			<section className='vrx-results-zone border-b border-tp-slate-200' style={{backgroundColor: '#F1F1F5'}}>
 				<div className='px-4 pt-4 pb-2'>
-					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-tp-slate-100 p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'}}>
+					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-[#F1F1F5] p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'}}>
 						{TABS.map((tab) => {
 							const state = tabState[tab.id]
 							const active = activeTab === tab.id
 							
 							const baseClass = "flex-1 flex items-center justify-center gap-[6px] whitespace-nowrap rounded-[10px] px-[10px] text-[13px] font-semibold tracking-tight transition-all duration-200"
 							const activeClass = "bg-white text-tp-blue-600 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_1px_2px_rgba(15,23,42,0.04)]"
-							const inactiveClass = "text-tp-slate-600 bg-tp-slate-50 hover:bg-white/50 hover:text-tp-slate-900"
+							const inactiveClass = "text-tp-slate-600 bg-[#FAFAFB] hover:bg-white/50 hover:text-tp-slate-900"
 							
 							return (
 								<button

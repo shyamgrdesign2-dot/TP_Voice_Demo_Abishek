@@ -92,7 +92,7 @@ export function TopBar({sessionStatus, onLogout, onSessionHistory, onBack, activ
 						<Tooltip label='Session history'>
 							<button
 								type='button'
-								className='bg-tp-slate-100 content-stretch flex h-[42px] w-[42px] items-center justify-center relative rounded-[10px] shrink-0 transition-colors hover:bg-tp-slate-200'
+								className='bg-[#f1f1f5] content-stretch flex h-[42px] w-[42px] items-center justify-center relative rounded-[10px] shrink-0 transition-colors hover:bg-[#e2e2ea]'
 								onClick={onSessionHistory}
 								aria-label='Session history'
 							>
@@ -104,7 +104,7 @@ export function TopBar({sessionStatus, onLogout, onSessionHistory, onBack, activ
 							<Tooltip label='User Profile'>
 								<button
 									type='button'
-									className='bg-tp-slate-100 relative rounded-full shrink-0 flex items-center justify-center h-[42px] w-[42px] transition-colors hover:bg-tp-slate-200'
+									className='bg-[#f1f1f5] relative rounded-full shrink-0 flex items-center justify-center h-[42px] w-[42px] transition-colors hover:bg-[#e2e2ea]'
 									onClick={() => setShowProfileMenu(v => !v)}
 									aria-label='User Profile'
 								>
