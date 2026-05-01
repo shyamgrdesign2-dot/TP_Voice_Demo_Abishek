@@ -101,7 +101,7 @@ export function ResultsView({clinicalResults, transcript, activeTab, setActiveTa
 
 	return (
 		<>
-			<section className='vrx-results-zone bg-tp-slate-50 border-b border-tp-slate-200'>
+			<section className='vrx-results-zone bg-tp-slate-100 border-b border-tp-slate-200'>
 				<div className='px-4 pt-4 pb-2'>
 					<div className="vrx-cn-tabs flex h-[44px] w-full items-stretch gap-[4px] overflow-x-auto rounded-[14px] bg-tp-slate-100 p-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.04)'}}>
 						{TABS.map((tab) => {
