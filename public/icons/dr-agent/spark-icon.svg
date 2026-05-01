@@ -1,0 +1,10 @@
+<svg width="375" height="375" viewBox="0 0 375 375" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M290.387 195.649C240.198 200.476 200.481 240.165 195.649 290.32L187.497 375L179.351 290.326C174.521 240.179 134.803 200.478 84.6131 195.642L0 187.503L84.6199 179.358C134.807 174.53 174.519 134.834 179.351 84.6805L187.503 0L195.649 84.6737C200.479 134.821 240.197 174.522 290.387 179.358L375 187.497L290.387 195.649Z" fill="url(#dr_agent_grad)"/>
+<defs>
+<linearGradient id="dr_agent_grad" x1="0" y1="0" x2="375" y2="375" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#D565EA"/>
+<stop offset="50%" stop-color="#8B5CF6"/>
+<stop offset="100%" stop-color="#673AAC"/>
+</linearGradient>
+</defs>
+</svg>

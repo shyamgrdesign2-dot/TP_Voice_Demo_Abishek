@@ -1,0 +1,11 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="500" height="500" rx="100" fill="white"/>
+<path d="M352.887 258.149C302.698 262.976 262.981 302.665 258.149 352.82L249.997 437.5L241.851 352.826C237.021 302.679 197.303 262.978 147.113 258.142L62.5 250.003L147.12 241.858C197.307 237.03 237.019 197.334 241.851 147.18L250.003 62.5L258.149 147.174C262.979 197.321 302.697 237.022 352.887 241.858L437.5 249.997L352.887 258.149Z" fill="url(#dr_agent_bg_grad)"/>
+<defs>
+<linearGradient id="dr_agent_bg_grad" x1="62.5" y1="62.5" x2="437.5" y2="437.5" gradientUnits="userSpaceOnUse">
+<stop offset="0%" stop-color="#D565EA"/>
+<stop offset="50%" stop-color="#8B5CF6"/>
+<stop offset="100%" stop-color="#673AAC"/>
+</linearGradient>
+</defs>
+</svg>
