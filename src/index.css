@@ -338,6 +338,10 @@
 		@apply relative inline-flex h-[42px] w-[42px] items-center justify-center rounded-[12px] border border-white/70 bg-white/70 text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_20px_-14px_rgba(15,23,42,0.35)] backdrop-blur-xl transition disabled:cursor-not-allowed disabled:opacity-45;
 	}
 	
+	.voicerx-session-button {
+		@apply inline-flex h-[42px] min-w-28 items-center justify-center rounded-[12px] border border-slate-200 bg-white/75 px-4 text-sm font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_6px_20px_-14px_rgba(15,23,42,0.35)] backdrop-blur-xl transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45;
+	}
+	
 	.voicerx-close-button {
 		@apply text-red-600;
 	}
@@ -365,6 +369,10 @@
 	
 	.voicerx-submit-button-complete {
 		background: linear-gradient(90deg, #10b981, #2563eb);
+	}
+	
+	.voicerx-stop-process-button {
+		@apply inline-flex h-[42px] min-w-40 items-center justify-center gap-2 rounded-[12px] bg-red-600 px-5 text-sm font-semibold text-white shadow-[0_14px_32px_-18px_rgba(220,38,38,0.75)] transition hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
 	}
 	
 	.voicerx-status-card {

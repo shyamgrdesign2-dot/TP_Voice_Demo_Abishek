@@ -175,6 +175,7 @@ export default function App() {
 	const settingsRef = useRef(settings)
 	const closeRequestedRef = useRef(false)
 	const previousClinicalContextRef = useRef({})
+	const transcriptTextRef = useRef('')
 	
 	useEffect(() => {
 		settingsRef.current = settings
@@ -262,16 +263,20 @@ export default function App() {
 	const transcriptText = useMemo(
 		() =>
 			messages
-				.filter((message) =>
-					message.kind === 'user-transcript' ||
-					message.kind === 'assistant-transcript' ||
-					message.kind === 'user'
-				)
+					.filter((message) =>
+						message.kind === 'user-transcript' ||
+						message.kind === 'user'
+					)
 				.map((message) => message.text.trim())
 				.filter(Boolean)
 				.join('\n'),
-		[messages]
+			[messages]
 	)
+	
+	useEffect(() => {
+		transcriptTextRef.current = transcriptText
+	}, [transcriptText])
+	
 	const setupJson = useMemo(
 		() => JSON.stringify(formatSetupPayload(settings), null, 2),
 		[settings]
@@ -858,7 +863,7 @@ export default function App() {
 	}
 	
 	async function submitToDigitizePipeline(transcriptOverride) {
-		const transcript = (transcriptOverride ?? transcriptText).trim()
+		const transcript = (transcriptOverride ?? transcriptTextRef.current).trim()
 		
 		if (!transcript) {
 			setDigitizeState('empty')
@@ -917,6 +922,16 @@ export default function App() {
 		void submitToDigitizePipeline(text)
 	}
 	
+	async function stopVoiceAndSubmit() {
+		if (isMicOn) {
+			await toggleMic()
+		}
+		
+		window.setTimeout(() => {
+			void submitToDigitizePipeline()
+		}, 700)
+	}
+	
 	if (!isAuthenticated) {
 		return (
 			<LoginView
@@ -954,6 +969,7 @@ export default function App() {
 				setTextInput={setVoiceTextInput}
 				onTextSubmit={submitVoiceTextInput}
 				onSubmit={submitToDigitizePipeline}
+				onStopVoiceSubmit={stopVoiceAndSubmit}
 				onLogout={handleLogout}
 				onSettings={() => navigate('/settings')}
 			/>
@@ -1204,6 +1220,7 @@ function VoiceRxFullscreenView({
 	                               setTextInput,
 	                               onTextSubmit,
 	                               onSubmit,
+	                               onStopVoiceSubmit,
 	                               onLogout,
 	                               onSettings
                                }) {
@@ -1332,16 +1349,16 @@ function VoiceRxFullscreenView({
 					
 					<VoiceRxWaveform stream={micStream} paused={!listening}/>
 					
-					<div className='voicerx-controls'>
-						<button
-							type='button'
-							className={classNames('voicerx-control-button', canDisconnect ? 'voicerx-close-button' : 'voicerx-connect-button')}
-							onClick={canDisconnect ? disconnect : connect}
-							disabled={!canConnect && !canDisconnect}
-							title={canDisconnect ? 'Disconnect' : 'Connect'}
-						>
-							{canDisconnect ? <PhoneOff className='h-5 w-5'/> : <PhoneCall className='h-5 w-5'/>}
-						</button>
+						<div className='voicerx-controls'>
+							<button
+								type='button'
+								className='voicerx-session-button'
+								onClick={canDisconnect ? disconnect : connect}
+								disabled={!canConnect && !canDisconnect}
+								title={canDisconnect ? 'Disconnect' : 'Connect'}
+							>
+								{canDisconnect ? 'Disconnect' : 'Connect'}
+							</button>
 					
 					<div className='voicerx-divider' aria-hidden/>
 					
@@ -1356,18 +1373,30 @@ function VoiceRxFullscreenView({
 					
 					<div className='voicerx-divider' aria-hidden/>
 					
-						<button
-							type='button'
-							className={classNames(
-								'voicerx-submit-button',
-								digitizeState === 'complete' && 'voicerx-submit-button-complete'
-							)}
-							onClick={onSubmit}
-							disabled={!hasTranscript || digitizeState === 'processing'}
-						>
-							{digitizeState === 'complete' ? <CheckCircle2 className='h-5 w-5'/> : null}
-							{submitLabel}
-						</button>
+						{isMicOn ? (
+							<button
+								type='button'
+								className='voicerx-stop-process-button'
+								onClick={onStopVoiceSubmit}
+								disabled={digitizeState === 'processing'}
+							>
+								<PhoneOff className='h-5 w-5'/>
+								Stop & Process
+							</button>
+						) : (
+							<button
+								type='button'
+								className={classNames(
+									'voicerx-submit-button',
+									digitizeState === 'complete' && 'voicerx-submit-button-complete'
+								)}
+								onClick={onSubmit}
+								disabled={!hasTranscript || digitizeState === 'processing'}
+							>
+								{digitizeState === 'complete' ? <CheckCircle2 className='h-5 w-5'/> : null}
+								{submitLabel}
+							</button>
+						)}
 				</div>
 				
 				<div className='voicerx-status-card' role='status'>
