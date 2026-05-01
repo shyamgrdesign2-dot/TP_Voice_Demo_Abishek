@@ -4,6 +4,10 @@ import {
   Camera,
   CameraOff,
   ChevronRight,
+  CheckCircle2,
+  FileText,
+  LockKeyhole,
+  LogOut,
   Mic,
   MicOff,
   PhoneCall,
@@ -15,7 +19,9 @@ import {
   Sparkles
 } from 'lucide-react'
 import {startTransition, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {VoiceRxWaveform} from './components/VoiceRxWaveform.jsx'
 import {AudioPlayer, AudioRecorder} from './lib/audio.js'
+import {processClinicalTranscript} from './lib/clinical-processing.js'
 import {generateEphemeralToken} from './lib/ephemeral-token.js'
 import {
   ACTIVITY_HANDLING_OPTIONS,
@@ -70,6 +76,11 @@ const NAV_ITEMS = [
 	{path: '/settings', label: 'Settings', icon: Settings2}
 ]
 const LIVE_TOKEN_STORAGE_KEY = 'goals-live-ephemeral-token'
+const AUTH_STORAGE_KEY = 'goals-authenticated'
+const DUMMY_CREDENTIALS = {
+	username: 'admin',
+	password: 'password123'
+}
 
 function readStoredLiveToken() {
 	if (typeof window === 'undefined') {
@@ -77,6 +88,14 @@ function readStoredLiveToken() {
 	}
 	
 	return window.localStorage.getItem(LIVE_TOKEN_STORAGE_KEY) || ''
+}
+
+function readStoredAuth() {
+	if (typeof window === 'undefined') {
+		return false
+	}
+	
+	return window.localStorage.getItem(AUTH_STORAGE_KEY) === 'true'
 }
 
 function createMessage(kind, text) {
@@ -108,13 +127,20 @@ function readPathname() {
 	}
 	
 	const pathname = window.location.pathname
-	return pathname === '/settings' || pathname === '/system' ? pathname : '/'
+	return pathname === '/settings' || pathname === '/system' || pathname === '/login'
+		? pathname
+		: '/'
 }
 
 export default function App() {
 	const [pathname, setPathname] = useState(readPathname)
+	const [isAuthenticated, setIsAuthenticated] = useState(readStoredAuth)
+	const [loginUsername, setLoginUsername] = useState('')
+	const [loginPassword, setLoginPassword] = useState('')
+	const [loginError, setLoginError] = useState('')
 	const [settings, setSettings] = useState(DEFAULT_SETTINGS)
 	const [liveApiKey, setLiveApiKey] = useState(readStoredLiveToken)
+	const [voiceTextInput, setVoiceTextInput] = useState('')
 	const [status, setStatus] = useState('disconnected')
 	const [statusDetail, setStatusDetail] = useState(() =>
 		readStoredLiveToken()
@@ -132,8 +158,12 @@ export default function App() {
 	const [isMicOn, setIsMicOn] = useState(false)
 	const [isCameraOn, setIsCameraOn] = useState(false)
 	const [isScreenOn, setIsScreenOn] = useState(false)
+	const [micStream, setMicStream] = useState(null)
 	const [previewTitle, setPreviewTitle] = useState('No live visual stream')
 	const [previewStream, setPreviewStream] = useState(null)
+	const [digitizeState, setDigitizeState] = useState('idle')
+	const [clinicalResults, setClinicalResults] = useState(null)
+	const [clinicalTab, setClinicalTab] = useState('transcript')
 	
 	const previewRef = useRef(null)
 	const conversationFeedRef = useRef(null)
@@ -144,10 +174,39 @@ export default function App() {
 	const screenRef = useRef(null)
 	const settingsRef = useRef(settings)
 	const closeRequestedRef = useRef(false)
+	const previousClinicalContextRef = useRef({})
 	
 	useEffect(() => {
 		settingsRef.current = settings
 	}, [settings])
+	
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return
+		}
+		
+		if (isAuthenticated) {
+			window.localStorage.setItem(AUTH_STORAGE_KEY, 'true')
+			return
+		}
+		
+		window.localStorage.removeItem(AUTH_STORAGE_KEY)
+	}, [isAuthenticated])
+	
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return
+		}
+		
+		if (!isAuthenticated && pathname !== '/login') {
+			window.history.replaceState({}, '', '/login')
+			return
+		}
+		
+		if (isAuthenticated && pathname === '/login') {
+			window.history.replaceState({}, '', '/')
+		}
+	}, [isAuthenticated, pathname])
 	
 	useEffect(() => {
 		if (typeof window === 'undefined') {
@@ -175,11 +234,12 @@ export default function App() {
 	
 	const groundingDisablesTools = settings.enableGrounding
 	const hasLiveToken = liveApiKey.startsWith('auth_tokens/')
-	const canConnect = hasLiveToken && status !== 'connecting' && status !== 'connected'
+	const canConnect = status !== 'connecting' && status !== 'connected'
 	const canDisconnect = status === 'connecting' || status === 'connected'
 	const isConnected = status === 'connected'
 	const canInteract = isConnected && isSessionReady
-	const isPlayground = pathname === '/'
+	const routePath = isAuthenticated && pathname === '/login' ? '/' : pathname
+	const isPlayground = routePath === '/'
 	
 	useEffect(() => {
 		if (!isPlayground || !conversationFeedRef.current) {
@@ -199,6 +259,19 @@ export default function App() {
 	}, [isPlayground, messages])
 	
 	const messageCount = useMemo(() => messages.length, [messages])
+	const transcriptText = useMemo(
+		() =>
+			messages
+				.filter((message) =>
+					message.kind === 'user-transcript' ||
+					message.kind === 'assistant-transcript' ||
+					message.kind === 'user'
+				)
+				.map((message) => message.text.trim())
+				.filter(Boolean)
+				.join('\n'),
+		[messages]
+	)
 	const setupJson = useMemo(
 		() => JSON.stringify(formatSetupPayload(settings), null, 2),
 		[settings]
@@ -411,13 +484,6 @@ export default function App() {
 	}
 	
 	async function connect() {
-		if (!hasLiveToken) {
-			setStatus('error')
-			setStatusDetail('No token found. Generate a token first.')
-			addMessage('system', 'Generate a token first, then connect.')
-			return
-		}
-		
 		if (!canConnect) {
 			return
 		}
@@ -429,10 +495,11 @@ export default function App() {
 		addDebugLine(`Opening Live session for ${FIXED_MODEL_ID}`)
 		
 		try {
+			const token = hasLiveToken ? liveApiKey : await refreshEphemeralToken({silent: true})
 			await ensureAudioPlayer()
 			
 			const {session} = await connectLiveSession({
-				apiKey: liveApiKey,
+				apiKey: token,
 				settings: settingsRef.current,
 				callbacks: {
 					onopen: () => {
@@ -493,29 +560,36 @@ export default function App() {
 		}
 	}
 	
-	async function refreshEphemeralToken() {
+	async function refreshEphemeralToken({silent = false} = {}) {
 		setStatusDetail('Generating fresh ephemeral token...')
-		addDebugLine('Generating a fresh ephemeral token from the UI.')
+		addDebugLine(silent ? 'Generating a fresh ephemeral token before connect.' : 'Generating a fresh ephemeral token from the UI.')
 		
 		try {
 			const token = await generateEphemeralToken()
 			setLiveApiKey(token.name)
-			setStatus('disconnected')
-			setStatusDetail('Fresh token ready. Connect again.')
+			if (!silent) {
+				setStatus('disconnected')
+				setStatusDetail('Fresh token ready. Connect again.')
+			}
 			addDebugLine('Fresh ephemeral token generated successfully.')
-			addMessage('system', 'Fresh ephemeral token generated. You can connect again now.')
+			if (!silent) {
+				addMessage('system', 'Fresh ephemeral token generated. You can connect again now.')
+			}
+			return token.name
 		}
 		catch (error) {
 			setStatus('error')
 			setStatusDetail(`Token generation failed: ${error.message}`)
 			addDebugLine(`Token generation failed: ${error.message}`)
 			addMessage('system', `Token generation failed: ${error.message}`)
+			throw error
 		}
 	}
 	
 	const teardownMedia = useCallback(() => {
 		recorderRef.current?.stop()
 		recorderRef.current = null
+		setMicStream(null)
 		cameraRef.current?.stop()
 		cameraRef.current = null
 		screenRef.current?.stop()
@@ -539,6 +613,10 @@ export default function App() {
 	}, [teardownMedia])
 	
 	useEffect(() => {
+		if (!isAuthenticated) {
+			return
+		}
+		
 		const refreshTimeoutId = window.setTimeout(() => {
 			void refreshDevices()
 		}, 0)
@@ -555,7 +633,7 @@ export default function App() {
 			teardownSession()
 			audioPlayerRef.current?.destroy()
 		}
-	}, [refreshDevices, teardownSession])
+	}, [isAuthenticated, refreshDevices, teardownSession])
 	
 	function disconnect() {
 		if (!canDisconnect) {
@@ -579,6 +657,7 @@ export default function App() {
 		if (isMicOn) {
 			recorderRef.current?.stop()
 			recorderRef.current = null
+			setMicStream(null)
 			
 			if (settingsRef.current.disableActivityDetection) {
 				sessionRef.current.sendRealtimeInput({activityEnd: {}})
@@ -606,6 +685,7 @@ export default function App() {
 			
 			await recorder.start(selectedMic || undefined)
 			recorderRef.current = recorder
+			setMicStream(recorder.mediaStream)
 			setIsMicOn(true)
 			addDebugLine('Microphone streaming at 16 kHz PCM.')
 			addMessage('system', 'Microphone on.')
@@ -730,12 +810,154 @@ export default function App() {
 	}
 	
 	function navigate(nextPath) {
-		if (nextPath === pathname) {
+		if (!isAuthenticated) {
+			window.history.replaceState({}, '', '/login')
+			return
+		}
+		
+		if (nextPath === routePath) {
 			return
 		}
 		
 		window.history.pushState({}, '', nextPath)
 		setPathname(nextPath)
+	}
+	
+	function handleLogin(event) {
+		event.preventDefault()
+		
+		if (
+			loginUsername.trim() === DUMMY_CREDENTIALS.username &&
+			loginPassword === DUMMY_CREDENTIALS.password
+		) {
+			setLoginError('')
+			setLoginPassword('')
+			setIsAuthenticated(true)
+			window.history.replaceState({}, '', '/')
+			setPathname('/')
+			return
+		}
+		
+		setLoginError('Invalid username or password.')
+	}
+	
+	function handleLogout() {
+		if (canDisconnect) {
+			disconnect()
+		}
+		else {
+			teardownSession()
+		}
+		
+		setIsAuthenticated(false)
+		setLoginUsername('')
+		setLoginPassword('')
+		setLoginError('')
+		window.history.replaceState({}, '', '/login')
+		setPathname('/login')
+	}
+	
+	async function submitToDigitizePipeline(transcriptOverride) {
+		const transcript = (transcriptOverride ?? transcriptText).trim()
+		
+		if (!transcript) {
+			setDigitizeState('empty')
+			window.setTimeout(() => setDigitizeState('idle'), 2400)
+			return
+		}
+		
+		setDigitizeState('processing')
+		setClinicalResults({
+			soap: {name: 'soap', status: 'pending'},
+			icd: {name: 'icd', status: 'pending'},
+			digitization: {name: 'digitization', status: 'pending'}
+		})
+		setClinicalTab('soap')
+		addDebugLine(`Clinical processing started with ${transcript.length} transcript characters.`)
+		
+		try {
+			const results = await processClinicalTranscript({
+				transcription: transcript,
+				previousContext: previousClinicalContextRef.current,
+				onResult: (tab, result) => {
+					if (tab === 'digitization' && result.status === 'fulfilled') {
+						previousClinicalContextRef.current = result.data
+					}
+					
+					setClinicalResults((current) => ({
+						...(current || {}),
+						[tab]: result
+					}))
+				}
+			})
+			setClinicalResults(results)
+			setDigitizeState('complete')
+			addDebugLine('Clinical processing completed.')
+			addMessage('system', 'VoiceRx transcript processed for Digitization, ICD, and SOAP.')
+			window.setTimeout(() => setDigitizeState('idle'), 3200)
+		}
+		catch (error) {
+			setDigitizeState('error')
+			addDebugLine(`Clinical processing failed: ${error.message}`)
+			addMessage('system', `Clinical processing failed: ${error.message}`)
+		}
+	}
+	
+	function submitVoiceTextInput() {
+		const text = voiceTextInput.trim()
+		
+		if (!text) {
+			return
+		}
+		
+		addMessage('user', text)
+		setVoiceTextInput('')
+		setClinicalTab('transcript')
+		addDebugLine(`Manual transcript text added: ${text}`)
+		void submitToDigitizePipeline(text)
+	}
+	
+	if (!isAuthenticated) {
+		return (
+			<LoginView
+				username={loginUsername}
+				password={loginPassword}
+				error={loginError}
+				setUsername={setLoginUsername}
+				setPassword={setLoginPassword}
+				onSubmit={handleLogin}
+			/>
+		)
+	}
+	
+	if (isPlayground) {
+		return (
+			<VoiceRxFullscreenView
+				canConnect={canConnect}
+				canDisconnect={canDisconnect}
+				canInteract={canInteract}
+				hasLiveToken={hasLiveToken}
+				connect={connect}
+				disconnect={disconnect}
+				toggleMic={toggleMic}
+				isMicOn={isMicOn}
+				micStream={micStream}
+				status={status}
+				statusDetail={statusDetail}
+				isSessionReady={isSessionReady}
+				transcript={transcriptText}
+				digitizeState={digitizeState}
+				clinicalResults={clinicalResults}
+				clinicalTab={clinicalTab}
+				setClinicalTab={setClinicalTab}
+				textInput={voiceTextInput}
+				setTextInput={setVoiceTextInput}
+				onTextSubmit={submitVoiceTextInput}
+				onSubmit={submitToDigitizePipeline}
+				onLogout={handleLogout}
+				onSettings={() => navigate('/settings')}
+			/>
+		)
 	}
 	
 	return (
@@ -752,7 +974,7 @@ export default function App() {
 								key={item.path}
 								icon={item.icon}
 								label={item.label}
-								active={pathname === item.path}
+								active={routePath === item.path}
 								onClick={() => navigate(item.path)}
 							/>
 						))}
@@ -787,12 +1009,12 @@ export default function App() {
 					<div className='flex items-center gap-3'>
 						<div>
 							<div className='text-2xl font-semibold text-white'>
-								{pathname === '/' ? 'Health Coach' : pathname === '/settings' ? 'Run settings' : 'System'}
+								{routePath === '/' ? 'Health Coach' : routePath === '/settings' ? 'Run settings' : 'System'}
 							</div>
 							<div className='text-xs text-slate-500'>
-								{pathname === '/'
+								{routePath === '/'
 									? ''
-									: pathname === '/settings'
+									: routePath === '/settings'
 										? 'Live session controls'
 										: 'Assistant instructions'}
 							</div>
@@ -832,6 +1054,14 @@ export default function App() {
 							ready={isSessionReady}
 							detail={statusDetail}
 						/>
+						<button
+							type='button'
+							className='icon-button'
+							onClick={handleLogout}
+							title='Log out'
+						>
+							<LogOut className='h-4 w-4'/>
+						</button>
 					</div>
 				</div>
 				
@@ -859,7 +1089,7 @@ export default function App() {
 						previewStream={previewStream}
 						previewTitle={previewTitle}
 					/>
-				) : pathname === '/settings' ? (
+				) : routePath === '/settings' ? (
 					<SettingsView
 						settings={settings}
 						updateSetting={updateSetting}
@@ -884,6 +1114,428 @@ export default function App() {
 			</main>
 		</div>
 	)
+}
+
+function LoginView({
+	                   username,
+	                   password,
+	                   error,
+	                   setUsername,
+	                   setPassword,
+	                   onSubmit
+                   }) {
+	return (
+		<main className='login-shell'>
+			<section className='login-card'>
+				<div className='login-mark'>
+					<LockKeyhole className='h-5 w-5'/>
+				</div>
+				<div>
+					<div className='text-xs uppercase tracking-[0.24em] text-slate-500'>
+						Secure access
+					</div>
+					<h1 className='mt-3 font-display text-4xl text-white'>
+						Sign in to Health Coach
+					</h1>
+					<p className='mt-3 text-sm leading-6 text-slate-400'>
+						Use the demo credentials to open the playground, system prompt, and settings pages.
+					</p>
+				</div>
+				
+				<form className='mt-8 space-y-4' onSubmit={onSubmit}>
+					<Field label='Username'>
+						<input
+							className='settings-input'
+							value={username}
+							autoComplete='username'
+							placeholder={DUMMY_CREDENTIALS.username}
+							onChange={(event) => setUsername(event.target.value)}
+						/>
+					</Field>
+					
+					<Field label='Password'>
+						<input
+							className='settings-input'
+							type='password'
+							value={password}
+							autoComplete='current-password'
+							placeholder={DUMMY_CREDENTIALS.password}
+							onChange={(event) => setPassword(event.target.value)}
+						/>
+					</Field>
+					
+					{error ? (
+						<div className='login-error'>{error}</div>
+					) : null}
+					
+					<button type='submit' className='login-button'>
+						Sign in
+					</button>
+				</form>
+				
+				<div className='login-demo'>
+					<div>Demo username: {DUMMY_CREDENTIALS.username}</div>
+					<div>Demo password: {DUMMY_CREDENTIALS.password}</div>
+				</div>
+			</section>
+		</main>
+	)
+}
+
+function VoiceRxFullscreenView({
+	                               canConnect,
+	                               canDisconnect,
+	                               canInteract,
+	                               hasLiveToken,
+	                               connect,
+	                               disconnect,
+	                               toggleMic,
+	                               isMicOn,
+	                               micStream,
+	                               status,
+	                               statusDetail,
+	                               isSessionReady,
+	                               transcript,
+	                               digitizeState,
+	                               clinicalResults,
+	                               clinicalTab,
+	                               setClinicalTab,
+	                               textInput,
+	                               setTextInput,
+	                               onTextSubmit,
+	                               onSubmit,
+	                               onLogout,
+	                               onSettings
+                               }) {
+	const hasTranscript = transcript.trim().length > 0
+	const listening = canInteract && isMicOn
+	const statusLabel = !hasLiveToken
+		? 'Token required'
+		: status === 'connecting'
+			? 'Connecting'
+			: listening
+				? 'Listening'
+				: isSessionReady
+					? 'Ready'
+					: status === 'error'
+						? 'Attention needed'
+						: 'Idle'
+	const submitLabel = digitizeState === 'processing'
+		? 'Processing'
+		: digitizeState === 'complete'
+			? 'Done'
+			: digitizeState === 'empty'
+				? 'No transcript'
+				: digitizeState === 'error'
+					? 'Retry'
+					: 'Submit'
+	const tabs = [
+		{id: 'transcript', label: 'Transcript'},
+		{id: 'soap', label: 'SOAP'},
+		{id: 'icd', label: 'ICD'},
+		{id: 'digitization', label: 'Digitization'}
+	]
+	
+	return (
+		<main className='voicerx-shell'>
+			<div className='voicerx-aura' aria-hidden/>
+			
+			<header className='voicerx-topbar'>
+				<div className='voicerx-mode-pill'>
+					<span className='voicerx-back-mark'>
+						<ChevronRight className='h-4 w-4 rotate-180'/>
+					</span>
+					<span>Dictation Mode</span>
+				</div>
+				
+				<div className='voicerx-top-actions'>
+					<button type='button' className='voicerx-ghost-button' onClick={onSettings}>
+						Settings
+					</button>
+					<button type='button' className='voicerx-icon-button' onClick={onLogout} title='Log out'>
+						<LogOut className='h-4 w-4'/>
+					</button>
+				</div>
+			</header>
+			
+			<section className='voicerx-stage'>
+				<div className='voicerx-title-block'>
+					<div className='voicerx-brand'>
+						<VoiceRxGlyph/>
+						<span>VoiceRx</span>
+					</div>
+					<h1>Clinical voice capture</h1>
+					<p>{statusDetail}</p>
+				</div>
+				
+				<div className='voicerx-output-card'>
+					<div className='voicerx-tabs'>
+						{tabs.map((tab) => (
+							<button
+								key={tab.id}
+								type='button'
+								className={classNames('voicerx-tab', clinicalTab === tab.id && 'voicerx-tab-active')}
+								onClick={() => setClinicalTab(tab.id)}
+							>
+								{tab.label}
+							</button>
+						))}
+					</div>
+					
+				<div className='voicerx-transcript-frame'>
+					<div className='voicerx-transcript-fade-top' aria-hidden/>
+					<div className='voicerx-transcript-fade-bottom' aria-hidden/>
+					{clinicalTab === 'transcript' && hasTranscript ? (
+						<p className='voicerx-transcript-text'>
+							{transcript}
+							{listening ? <span className='voicerx-caret' aria-hidden/> : null}
+						</p>
+					) : clinicalTab === 'transcript' ? (
+						<div className='voicerx-empty-copy'>
+							<FileText className='h-11 w-11'/>
+							<p>
+								Start the Live session and speak. The realtime Gemini transcript will appear here.
+							</p>
+						</div>
+					) : (
+						<ClinicalResultPanel
+							tab={clinicalTab}
+							result={clinicalResults?.[clinicalTab]}
+						/>
+					)}
+				</div>
+				</div>
+			</section>
+			
+				<footer className='voicerx-control-zone'>
+					<div className='voicerx-text-composer'>
+						<input
+							className='voicerx-text-input'
+							value={textInput}
+							placeholder='Type clinical note instead of speaking...'
+							onChange={(event) => setTextInput(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === 'Enter') {
+									onTextSubmit()
+								}
+							}}
+						/>
+						<button
+							type='button'
+							className='voicerx-text-send'
+							onClick={onTextSubmit}
+							disabled={!textInput.trim()}
+						>
+							Add to Transcript
+						</button>
+					</div>
+					
+					<VoiceRxWaveform stream={micStream} paused={!listening}/>
+					
+					<div className='voicerx-controls'>
+						<button
+							type='button'
+							className={classNames('voicerx-control-button', canDisconnect ? 'voicerx-close-button' : 'voicerx-connect-button')}
+							onClick={canDisconnect ? disconnect : connect}
+							disabled={!canConnect && !canDisconnect}
+							title={canDisconnect ? 'Disconnect' : 'Connect'}
+						>
+							{canDisconnect ? <PhoneOff className='h-5 w-5'/> : <PhoneCall className='h-5 w-5'/>}
+						</button>
+					
+					<div className='voicerx-divider' aria-hidden/>
+					
+					<button
+						type='button'
+						className={classNames('voicerx-mic-button', isMicOn && 'voicerx-mic-button-active')}
+						onClick={toggleMic}
+						disabled={!canInteract}
+					>
+						{isMicOn ? <Mic className='h-5 w-5'/> : <MicOff className='h-5 w-5'/>}
+					</button>
+					
+					<div className='voicerx-divider' aria-hidden/>
+					
+						<button
+							type='button'
+							className={classNames(
+								'voicerx-submit-button',
+								digitizeState === 'complete' && 'voicerx-submit-button-complete'
+							)}
+							onClick={onSubmit}
+							disabled={!hasTranscript || digitizeState === 'processing'}
+						>
+							{digitizeState === 'complete' ? <CheckCircle2 className='h-5 w-5'/> : null}
+							{submitLabel}
+						</button>
+				</div>
+				
+				<div className='voicerx-status-card' role='status'>
+					<span className={classNames('voicerx-status-dot', listening && 'voicerx-status-dot-live')}/>
+					<span>{statusLabel}</span>
+				</div>
+			</footer>
+		</main>
+	)
+}
+
+function VoiceRxGlyph() {
+	return (
+		<svg width='18' height='15' viewBox='0 0 18 15' fill='none' aria-hidden>
+			<path d='M.96 11.1A.96.96 0 0 1 0 10.14V4.63a.96.96 0 0 1 1.93 0v5.51a.96.96 0 0 1-.97.97Z' fill='currentColor'/>
+			<path d='M4.82 12.95a.96.96 0 0 1-.96-.97V2.8a.96.96 0 0 1 1.93 0v9.18a.96.96 0 0 1-.97.97Z' fill='currentColor'/>
+			<path d='M8.68 14.79a.96.96 0 0 1-.97-.97V.96a.96.96 0 0 1 1.93 0v12.86a.96.96 0 0 1-.96.97Z' fill='currentColor'/>
+			<path d='M12.53 12.95a.96.96 0 0 1-.96-.97V2.8a.96.96 0 0 1 1.93 0v9.18a.96.96 0 0 1-.97.97Z' fill='currentColor'/>
+			<path d='M16.39 11.1a.96.96 0 0 1-.96-.96V4.63a.96.96 0 0 1 1.93 0v5.51a.96.96 0 0 1-.97.97Z' fill='currentColor'/>
+		</svg>
+	)
+}
+
+function ClinicalResultPanel({tab, result}) {
+	if (result?.status === 'pending') {
+		return (
+			<div className='voicerx-result-state'>
+				<span className='voicerx-spinner' aria-hidden/>
+				<p>Processing {tabLabel(tab)}...</p>
+			</div>
+		)
+	}
+	
+	if (!result) {
+		return (
+			<div className='voicerx-result-state'>
+				<FileText className='h-10 w-10'/>
+				<p>Submit the transcript to generate {tabLabel(tab)} details.</p>
+			</div>
+		)
+	}
+	
+	if (result.status === 'rejected') {
+		return (
+			<div className='voicerx-result-error'>
+				<div className='font-semibold'>{tabLabel(tab)} unavailable</div>
+				<p>{result.error}</p>
+			</div>
+		)
+	}
+	
+	if (tab === 'soap') {
+		return <SoapResult data={result.data}/>
+	}
+	
+	return <StructuredResult data={result.data}/>
+}
+
+function tabLabel(tab) {
+	return {
+		digitization: 'Digitization',
+		icd: 'ICD',
+		soap: 'SOAP'
+	}[tab] || 'Transcript'
+}
+
+function StructuredResult({data}) {
+	if (!data || typeof data !== 'object') {
+		return <pre className='voicerx-result-json'>{JSON.stringify(data, null, 2)}</pre>
+	}
+	
+	return (
+		<div className='voicerx-result-grid'>
+			{Object.entries(data).map(([key, value]) => (
+				<section key={key} className='voicerx-result-section'>
+					<h3>{formatResultKey(key)}</h3>
+					<ResultValue value={value}/>
+				</section>
+			))}
+		</div>
+	)
+}
+
+function ResultValue({value}) {
+	if (Array.isArray(value)) {
+		if (value.length === 0) {
+			return <p className='voicerx-muted'>Not documented</p>
+		}
+		
+		return (
+			<div className='space-y-2'>
+				{value.map((item, index) => (
+					<div key={`${index}-${JSON.stringify(item).slice(0, 24)}`} className='voicerx-result-item'>
+						<ResultValue value={item}/>
+					</div>
+				))}
+			</div>
+		)
+	}
+	
+	if (value && typeof value === 'object') {
+		const entries = Object.entries(value).filter(([, entryValue]) => {
+			if (Array.isArray(entryValue)) {
+				return entryValue.length > 0
+			}
+			return entryValue !== '' && entryValue !== null && entryValue !== undefined
+		})
+		
+		if (entries.length === 0) {
+			return <p className='voicerx-muted'>Not documented</p>
+		}
+		
+		return (
+			<div className='voicerx-kv-list'>
+				{entries.map(([key, entryValue]) => (
+					<div key={key} className='voicerx-kv-row'>
+						<span>{formatResultKey(key)}</span>
+						<div><ResultValue value={entryValue}/></div>
+					</div>
+				))}
+			</div>
+		)
+	}
+	
+	if (value === '' || value === null || value === undefined) {
+		return <p className='voicerx-muted'>Not documented</p>
+	}
+	
+	return <p className='voicerx-result-text'>{String(value)}</p>
+}
+
+function SoapResult({data}) {
+	const sections = ['subjective', 'objective', 'assessment', 'plan']
+	
+	return (
+		<div className='voicerx-result-grid'>
+			{sections.map((section) => (
+				<section key={section} className='voicerx-result-section'>
+					<h3>{formatResultKey(section)}</h3>
+					<p className='voicerx-result-text whitespace-pre-wrap'>
+						{rtfToReadableText(data?.[section]) || 'Not documented'}
+					</p>
+				</section>
+			))}
+		</div>
+	)
+}
+
+function rtfToReadableText(value) {
+	if (!value) {
+		return ''
+	}
+	
+	return String(value)
+		.replace(/\\'[0-9a-fA-F]{2}/g, '')
+		.replace(/\\bullet/g, '•')
+		.replace(/\\par[d]?/g, '\n')
+		.replace(/\\[a-zA-Z]+-?\d* ?/g, '')
+		.replace(/[{}]/g, '')
+		.replace(/\n{3,}/g, '\n\n')
+		.trim()
+}
+
+function formatResultKey(key) {
+	return key
+		.replace(/([A-Z])/g, ' $1')
+		.replace(/[_-]+/g, ' ')
+		.replace(/^./, (letter) => letter.toUpperCase())
 }
 
 function PlaygroundView({
