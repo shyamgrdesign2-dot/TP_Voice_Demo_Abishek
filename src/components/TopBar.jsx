@@ -83,39 +83,39 @@ export function TopBar({sessionStatus, onLogout, onSessionHistory, onBack, activ
 						)}
 					</div>
 
-					<div className='pointer-events-auto flex items-center gap-[10px]'>
-						<span className='vrx-status-pill hidden sm:flex !h-[42px] px-[14px]' style={{background: sessionStatus === 'ready' ? 'var(--tp-success-50, #ECFDF5)' : 'var(--tp-slate-100)'}}>
+					<div className='pointer-events-auto flex items-center gap-[4px] bg-[#F1F1F5] rounded-[10px] p-[4px] h-[42px]'>
+						<span className='vrx-status-pill hidden sm:flex !h-[34px] !px-[12px]' style={{background: sessionStatus === 'ready' ? '#ECFDF5' : 'transparent'}}>
 							<span className={`tp-status-dot ${statusDotClass}`}/>
-							<span className='text-[13px]'>{statusLabel}</span>
+							<span>{statusLabel}</span>
 						</span>
 						
-						<Tooltip label='Session history'>
+						<span className='inline-flex'>
 							<button
 								type='button'
-								className='bg-[#f1f1f5] content-stretch flex h-[42px] w-[42px] items-center justify-center relative rounded-[10px] shrink-0 transition-colors hover:bg-[#e2e2ea]'
+								className='bg-transparent content-stretch flex h-[34px] w-[34px] items-center justify-center relative rounded-[6px] shrink-0 transition-colors hover:bg-white/60'
 								onClick={onSessionHistory}
 								aria-label='Session history'
 							>
-								<Clock className='h-[20px] w-[20px] text-[#454551]'/>
+								<Clock className='h-[18px] w-[18px] text-[#454551]' strokeWidth={2}/>
 							</button>
-						</Tooltip>
+						</span>
 						
 						<div className='relative' ref={menuRef}>
-							<Tooltip label='User Profile'>
+							<span className='inline-flex'>
 								<button
 									type='button'
-									className='bg-[#f1f1f5] relative rounded-full shrink-0 flex items-center justify-center h-[42px] w-[42px] transition-colors hover:bg-[#e2e2ea]'
+									className='bg-transparent relative rounded-[6px] shrink-0 flex items-center justify-center h-[34px] w-[34px] transition-colors hover:bg-white/60'
 									onClick={() => setShowProfileMenu(v => !v)}
 									aria-label='User Profile'
 								>
-									<div className="flex items-center justify-center h-[24px] w-[24px]" aria-hidden="true">
-										<svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" viewBox="0 0 24 24" fill="none">
+									<div className="flex items-center justify-center h-[20px] w-[20px]" aria-hidden="true">
+										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
 											<path opacity=".4" d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" fill="#545460"></path>
 											<path d="M12 14.5c-5.01 0-9.09 3.36-9.09 7.5 0 .28.22.5.5.5h17.18c.28 0 .5-.22.5-.5 0-4.14-4.08-7.5-9.09-7.5Z" fill="#545460"></path>
 										</svg>
 									</div>
 								</button>
-							</Tooltip>
+							</span>
 							
 							{showProfileMenu ? (
 								<div className='absolute right-0 top-full mt-[8px] w-[220px] rounded-[14px] bg-white p-[6px] shadow-[0_8px_30px_rgba(15,23,42,0.12)] border border-tp-slate-200 origin-top-right animate-in fade-in zoom-in-95 duration-100 z-50'>
